@@ -383,9 +383,6 @@ def index_point_feature(volume_feature, ray_coordinate_ref, chunk=-1):
         return features
 
 
-
-
-
 def to_tensor_cuda(data, device, filter):
     for item in data.keys():
 

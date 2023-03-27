@@ -299,27 +299,26 @@ if __name__ == '__main__':
                                           mode='max',
                                           save_top_k=0)
 
-    logger = loggers.TestTubeLogger(
+    logger = loggers.TensorBoardLogger(
         save_dir="runs_fine_tuning",
         name=args.expname,
-        debug=False,
-        create_git_tag=False
     )
 
     args.num_gpus, args.use_amp = 1, False
     trainer = Trainer(max_epochs=args.num_epochs,
-                      checkpoint_callback=checkpoint_callback,
+                    #   checkpoint_callback=checkpoint_callback,
                       logger=logger,
-                      weights_summary=None,
-                      progress_bar_refresh_rate=1,
+                    #   weights_summary=None,
+                    #   progress_bar_refresh_rate=1,
+                      accelerator='gpu',
                       gpus=args.num_gpus,
-                      distributed_backend='ddp' if args.num_gpus > 1 else None,
+                    #   distributed_backend='ddp' if args.num_gpus > 1 else None,
                       num_sanity_val_steps=1, #if args.num_gpus > 1 else 5,
                       # check_val_every_n_epoch = max(system.args.num_epochs//system.args.N_vis,1),
-                      val_check_interval=500,
+                      val_check_interval=5000,
                       benchmark=True,
-                      precision=16 if args.use_amp else 32,
-                      amp_level='O1')
+                      precision=16 if args.use_amp else 32)
+                    #   amp_level='O1')
 
     trainer.fit(system)
     system.save_ckpt()

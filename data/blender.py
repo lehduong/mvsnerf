@@ -31,11 +31,11 @@ class BlenderDataset(Dataset):
             self.meta = json.load(f)
 
         # sub select training views from pairing file
-        if os.path.exists('configs/pairs.th'):
-            name = os.path.basename(self.root_dir)
-            self.img_idx = torch.load('configs/pairs.th')[f'{name}_{self.split}']
-            self.meta['frames'] = [self.meta['frames'][idx] for idx in self.img_idx]
-            print(f'===> {self.split}ing index: {self.img_idx}')
+        # if os.path.exists('configs/pairs.th'):
+        #     name = os.path.basename(self.root_dir)
+        #     self.img_idx = torch.load('configs/pairs.th')[f'{name}_{self.split}']
+        #     self.meta['frames'] = [self.meta['frames'][idx] for idx in self.img_idx]
+        #     print(f'===> {self.split}ing index: {self.img_idx}')
 
         w, h = self.img_wh
         self.focal = 0.5 * 800 / np.tan(0.5 * self.meta['camera_angle_x'])  # original focal length
@@ -103,9 +103,10 @@ class BlenderDataset(Dataset):
 
         # if do not specify source views, load index from pairing file
         if pair_idx is None:
-            name = os.path.basename(self.root_dir)
-            pair_idx = torch.load('configs/pairs.th')[f'{name}_train'][:3]
-            print(f'====> ref idx: {pair_idx}')
+            # name = os.path.basename(self.root_dir)
+            # pair_idx = torch.load('configs/pairs.th')[f'{name}_train'][:3]
+            # print(f'====> ref idx: {pair_idx}')
+            pair_idx = np.arange(len(meta['frames']))[:3]
 
         imgs, proj_mats = [], []
         intrinsics, c2ws, w2cs = [],[],[]
