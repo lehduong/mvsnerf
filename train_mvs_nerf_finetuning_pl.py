@@ -50,9 +50,9 @@ class MVSSystem(LightningModule):
         dataset = dataset_dict[self.args.dataset_name]
         self.train_dataset = dataset(args, split='train')
         self.val_dataset   = dataset(args, split='val')
+        args.use_color_volume = True
         self.init_volume()
         self.grad_vars += list(self.volume.parameters())
-
 
     def init_volume(self):
 
