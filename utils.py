@@ -340,7 +340,7 @@ def get_ptsvolume(H, W, D, pad, near_far, intrinsic, c2w):
     near,far = near_far
 
     corners = torch.tensor([[-pad,-pad,1.0],[W+pad,-pad,1.0],[-pad,H+pad,1.0],[W+pad,H+pad,1.0]]).float().to(intrinsic.device)
-    corners = torch.matmul(corners, torch.inverse(intrinsic).t())
+    corners = torch.matmul(corners, torch.linalg.inv(intrinsic).t())
 
     linspace_x = torch.linspace(corners[0, 0], corners[1, 0], W+2*pad)
     linspace_y = torch.linspace(corners[ 0, 1], corners[2, 1], H+2*pad)

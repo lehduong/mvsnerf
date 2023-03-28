@@ -1,4 +1,4 @@
-import sys,os,imageio
+import sys, os, imageio, json
 root = '/home/duongl/mvsnerf'
 os.chdir(root)
 sys.path.append(root)
@@ -166,7 +166,7 @@ for i_scene, scene in enumerate(['0d251b65dfa04e3e88cd8774b77c3a27']):#'ship','d
 
     is_finetued = True # set True if rendering with finetuning
     if is_finetued:
-        cmd += f'--ckpt runs_fine_tuning/{scene}/ckpts/latest.tar'
+        cmd += f'--ckpt runs_fine_tuning/objaverse/ckpts/latest.tar'
         pad = 0 #the padding value should be same as your finetuning ckpt
     else:
         cmd += '--ckpt ./ckpts/mvsnerf-v0.tar'
@@ -177,6 +177,7 @@ for i_scene, scene in enumerate(['0d251b65dfa04e3e88cd8774b77c3a27']):#'ship','d
 
     args.N_samples = 128
     args.feat_dim = 8+3*4
+    args.use_color_volume = True
 
     if i_scene==0 or is_finetued:
         render_kwargs_train, render_kwargs_test, start, grad_vars = create_nerf_mvs(args, use_mvs=True, dir_embedder=False, pts_embedder=True)
@@ -189,7 +190,7 @@ for i_scene, scene in enumerate(['0d251b65dfa04e3e88cd8774b77c3a27']):#'ship','d
     datadir = args.datadir
     datatype = 'val'
     args.chunk = 5120
-    frames = 30
+    frames = 90
     dataset = dataset_dict[args.dataset_name](args, split=datatype)
     val_idx = torch.tensor(np.arange(3)).cuda() #dataset.img_idx
     
@@ -206,7 +207,7 @@ for i_scene, scene in enumerate(['0d251b65dfa04e3e88cd8774b77c3a27']):#'ship','d
             c2ws_all = dataset.load_poses_all()
             random_selete = torch.randint(0,len(c2ws_all),(1,))     #!!!!!!!!!! you may change this line if rendering a specify view 
             dis = np.sum(c2ws_all[:,:3,2] * c2ws_all[[random_selete],:3,2], axis=-1)
-            pair_idx = np.argsort(dis)[::-1][torch.randperm(15)[:3]]
+            pair_idx = np.argsort(dis)[::-1][torch.randperm(20)[:2]]
             imgs_source, proj_mats, near_far_source, pose_source = dataset.read_source_views(device=device)
             volume_feature = torch.load(args.ckpt)['volume']['feat_volume']
             volume_feature = RefVolume(volume_feature.detach()).cuda()
@@ -214,6 +215,18 @@ for i_scene, scene in enumerate(['0d251b65dfa04e3e88cd8774b77c3a27']):#'ship','d
             # c2ws_render = nerf_video_path(pose_source['c2ws'].cpu(), theta_range=60, phi_range=120, N_views=frames)
             c2ws_render = gen_render_path(c2ws_all[pair_idx], N_views=frames)
             c2ws_render = torch.from_numpy(np.stack(c2ws_render)).float().to(device)
+            
+            # Use camera poses from training set of nerf-synthetic chair
+            # TODO: add spherical camera trajectories
+            blender2opencv = np.array(
+                [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]
+            )
+            c2ws_render = []
+            camera_dict = json.load(open('data/camera_poses.json'))
+            for frame in camera_dict['frames']:
+                c2ws_render.append(np.array(frame["transform_matrix"]) @ blender2opencv)
+            c2ws_render = np.stack(c2ws_render, axis=0)
+            c2ws_render = torch.from_numpy(c2ws_render).float().to(device)
         else:            
             # neighboring views with angle distance
             c2ws_all = dataset.load_poses_all()
